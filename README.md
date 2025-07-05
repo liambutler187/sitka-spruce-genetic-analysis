@@ -1,5 +1,5 @@
 # Sitka spruce tree genetic analysis
-This repository contains the code for an analysis of diameter at breast height (dbh21) in Sitka spruce trees using pedigree-based linear mixed models. The analysis was conducted as part of a quantitative genetics module and focuses on estimating heritability, breeding values, and treatment effects across three generations of trees.
+This repository contains the code for an analysis of diameter at breast height (dbh21) in Sitka spruce trees using pedigree-based linear mixed models. The analysis focuses on estimating heritability, breeding values, and treatment effects across three generations of trees.
 
 ## Analysis Overview
 Model: Individual animal model using ASReml with pedigree-based random effects
