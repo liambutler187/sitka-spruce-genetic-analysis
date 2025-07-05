@@ -1,0 +1,574 @@
+---
+title: "QGM Assessment 2025"
+author:
+date: "23/01/2024"
+output: 
+  html_document:
+    number_sections: TRUE
+    toc: TRUE
+    toc_float: TRUE
+---
+
+```{r setup, include=FALSE}
+options(width=128)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+The asreml library and the qgm helper functions are loaded below
+
+```{r}
+setwd("~/Semester 2/Quantitative Genetic Models/Assessment P1")
+library("asreml")
+source("qgm_helpers.R")
+```
+
+```{r}
+tut4 <- read.csv(file="QGM_dat_2025_P1.csv", header=TRUE, na.strings=c("NA"))
+head(tut4)
+tail(tut4)
+```
+
+```{r}
+tut4[c(2001,2701),]
+tut4[c(1754,1748,1089,1738),]
+tut4[c(913,733,574,323,49,574),]
+```
+
+```{r}
+tut4[c(1,1001),]
+```
+```{r}
+gen0_data <- tut4[tut4$generation == 0, "dbh21"]
+shapiro.test(gen0_data)
+
+gen1_data <- tut4[tut4$generation == 1, "dbh21"]
+shapiro.test(gen1_data)
+```
+
+```{r}
+str(tut4$dbh21)
+mean(tut4$dbh21, na.rm = TRUE)
+sd(tut4$dbh21, na.rm = TRUE)
+```
+
+```{r}
+sires1 <- sort(unique(tut4$sid))
+dams1 <- sort(unique(tut4$did))
+dams1 ==  sires1
+dams1
+```
+
+
+```{r}
+mean(tut4$dbh21[tut4$generation == 0], na.rm = TRUE)
+mean(tut4$dbh21[tut4$generation == 1], na.rm = TRUE)
+sd(tut4$dbh21[tut4$generation == 0], na.rm = TRUE)
+sd(tut4$dbh21[tut4$generation == 1], na.rm = TRUE)
+```
+
+```{r}
+addmargins(table(tut4$gen,tut4$treatment))
+```
+Control: treatment = 1
+Experimental root treatments: treatment = 2/3
+Generations: 0-2
+**Have no phenotypic data on generation 2**
+
+```{r}
+contingency_table <- table(tut4$sid, tut4$did)
+contingency_df <- as.data.frame(contingency_table)
+filtered_df <- contingency_df[contingency_df$Freq != 0, ]
+print(filtered_df)
+```
+
+```{r}
+library(ggplot2)
+
+# Create a summary table
+summary_table <- as.data.frame(table(tut4$generation, tut4$treatment))
+colnames(summary_table) <- c("Generation", "Treatment", "Count")
+
+# Plot the data
+ggplot(summary_table, aes(x = Generation, y = Count, fill = Treatment)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Treatments per generation",
+       x = "Generation",
+       y = "Count") +
+  scale_fill_discrete(name = "Treatment") +
+  theme_minimal()
+```
+Unbalanced
+
+```{r}
+qgm_ped_summary(tut4[,1:3])
+```
+300O ids, only 1 id/individual
+1000 have no sire or dam
+100 distinct sires, 20 offspring each
+100 distinct dams, 20 offspring each
+Each breeding individual produces 40 offspring
+100 mating pairs, only 1 dam/sire each
+**100 parents used as sire and dam: listed**
+
+```{r}
+library(ggplot2)
+
+# Create the data frame
+pedigree_data <- data.frame(
+  Category = c(
+    'No. of distinct ids',
+    'No. of distinct ids with no sire or dam',
+    'No. of distinct sires', 
+    'No. of distinct dams', 
+    'No. of mating pairs', 
+    'No. of sires per dam', 
+    'No. of dams per sire', 
+    'No. of offspring per pair', 
+    'No. of parents used as sires and dams'),
+  Count = c(3000, 1000, 100, 100, 100, 1, 1, 20, 100)
+)
+
+# Create the bar plot
+ggplot(pedigree_data, aes(y = Count, x = reorder(Category, Count))) +
+  geom_bar(stat = "identity", fill = "skyblue") +
+  labs(title = "Summary of Pedigree Information", y = "Count", x = "Category") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(size = 10, angle = 45, hjust = 1), plot.title = element_text(hjust = 0.5)) +
+  geom_text(aes(label = Count), vjust = -0.3, size = 3.5) +
+  ylim(0, 3300)
+```
+
+
+```{r}
+tut4$treatment <- as.factor(tut4$treatment)
+tut4$generation <- as.factor(tut4$generation)
+tut4$tid <- factor(tut4$tid) 
+tut4$sid <- factor(tut4$sid)
+tut4$did <- factor(tut4$did)
+```
+
+```{r}
+hist(tut4$dbh21)
+points(tut4$generation)
+```
+```{r}
+ggplot(tut4, aes(x = dbh21, fill = factor(generation))) +
+  geom_histogram(binwidth = 1, position = "identity", alpha = 0.6) +
+  labs(x = "DBH21", y = "Frequency", fill = "Generation") +
+  theme_minimal()
+```
+
+
+```{r}
+library(ggplot2)
+ggplot(tut4, aes(x = treatment, y = dbh21, color = treatment)) +
+  geom_point(size = 3) +
+  labs(title = "DBH21 by Treatment",
+       x = "Treatment",
+       y = "DBH21") +
+  scale_color_discrete(name = "Treatment") +
+  theme_minimal()
+```
+
+```{r}
+install.packages("gridExtra")
+library(gridExtra)
+library(ggplot2)
+
+# Histogram plot
+p1 <- ggplot(tut4, aes(x = dbh21, fill = factor(generation))) +
+  geom_histogram(binwidth = 1, position = "identity", alpha = 0.6) +
+  labs(title = "DBH21 by Generation", x = "DBH21", y = "Frequency", fill = "Generation") +
+  theme_minimal()
+
+# Scatter plot
+p2 <- ggplot(tut4, aes(x = treatment, y = dbh21, color = treatment)) +
+  geom_point(size = 1.5) +
+  labs(title = "DBH21 by Treatment",
+       x = "Treatment",
+       y = "DBH21") +
+  scale_color_discrete(name = "Treatment") +
+  theme_minimal()
+grid.arrange(p1, p2, ncol = 2)
+```
+
+
+```{r}
+library(ggplot2)
+
+ggplot(tut4, aes(x = treatment, y = dbh21, color = treatment)) +
+  geom_point(size = 3) +
+  stat_summary(fun.data = mean_se, geom = "errorbar", width = 0.2, color = "black") +
+  stat_summary(fun = mean, geom = "point", shape = 18, size = 5, color = "black", aes(group = 1)) +
+  labs(title = "DBH21 by Treatment",
+       x = "Treatment",
+       y = "Diameter") +
+  scale_color_discrete(name = "Treatment") +
+  theme_minimal()
+```
+
+
+```{r}
+qgm_ped_summary(tut4[tut4$gen %in% c(0),])
+```
+
+```{r}
+qgm_ped_summary(tut4[tut4$gen %in% c(1),])
+```
+
+```{r}
+qgm_ped_summary(tut4[tut4$gen %in% c(2),])
+```
+All as expected
+
+```{r}
+ainv <- ainverse(tut4[,1:3]) 
+```
+
+
+```{r}
+tut4.asr <- asreml(fixed=dbh21~1+treatment,
+              random=~vm(tid,ainv),
+              residual=~idv(units),
+              data=tut4)
+```
+y = 1m + Xb + Zu + e
+
+y = the (2000 x 1) vector for dbh21 in the trees.
+
+1 = the (2000 x 1) vector of 1s, the identity matrix.
+
+m = a fitted mean, scalar.
+
+b = the (2 x 1) vector of fixed effects with 2 d.f. for treatment
+
+X = the (2000 x 2) design matrix for fixed effects.
+
+u = the (3000 x 1) vector of BREEDING VALUES assumed to be RANDOM with DISTRIBUTION MVN(0,VaA), where A is the NUMERATOR RELATIONSHIP MATRIX and Va is the ADDITIVE GENETIC VARIANCE.
+
+Z = the (2000 x 3000) design matrix for random effects.
+
+e = the (2000 x 1) vector of residuals assumed to be random and distributed MVN(0,VeI) where I is the (2000 x 2000) Identity matrix and Ve is the residual variance). 
+
+```{r}
+residuals <- residuals(tut4.asr)
+residuals_df <- data.frame(Residuals = residuals, Fitted = fitted(tut4.asr))
+library(ggplot2)
+
+ggplot(residuals_df, aes(x = Fitted, y = Residuals)) +
+  geom_point(size = 2, color = "blue") +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  labs(title = "Residuals vs Fitted Values",
+       x = "Fitted Values",
+       y = "Residuals") +
+  theme_minimal()
+```
+
+```{r}
+# Extract residuals from the asreml object
+residuals <- residuals(tut4.asr)
+
+# Create the Q-Q plot
+qqnorm(residuals, main="Normal Q-Q Plot", 
+       xlab="Theoretical Quantiles", 
+       ylab="Sample Quantiles", 
+       pch=19, col="blue")
+
+# Add a reference line
+qqline(residuals, col="red", lwd=2)
+
+# Enhance the plot with additional styling
+grid()  # Add a grid for better readability
+```
+
+```{r}
+# Control vs. Treatment 2
+ct1 <- c(1, -1, 0)
+qgm_fixed_linear(tut4.asr, "treatment", ct1)
+```
+Control mean ~0.1 less
+
+```{r}
+# Control vs. Treatment 3
+ct2 <- c(1, 0, -1)
+qgm_fixed_linear(tut4.asr, "treatment", ct2)
+```
+Control mean ~0.5 less
+
+```{r}
+# Treatment 2 vs. Treatment 3
+ct3 <- c(0, 1, -1)
+qgm_fixed_linear(tut4.asr, "treatment", ct3)
+```
+Treatment 2 ~0.4 less that 3
+
+```{r}
+# Control vs. Average of Treatments
+ct4 <- c(1, -0.5, -0.5)
+qgm_fixed_linear(tut4.asr, "treatment", ct4)
+```
+Control mean ~0.3 less that treatments averages
+
+```{r}
+tut6.asr <- asreml(fixed = dbh21 ~ 1 + treatment,
+                   random = ~ vm(tid, ainv)+idv(jid),
+                   residual = ~idv(units),
+                   data = tut4,
+                   as.is = TRUE)
+
+# Summary of the model
+qgm_summary(tut6.asr)
+```
+
+```{r}
+vpredict(tut6.asr, h2 ~ V2 / (V1 + V2 + V3))
+```
+
+
+```{r}
+# Remove rows with missing values
+tut4_clean <- na.omit(tut4)
+
+# Refit the model with the cleaned data
+tut8.asr <- asreml(fixed = dbh21 ~ 1 + treatment,
+                   random = ~ vm(tid, ainv) + idv(jid) + idv(did),
+                   residual = ~idv(units),
+                   data = tut4_clean,
+                   as.is = TRUE)
+
+# Summary of the model
+summary(tut8.asr)
+#does not work
+```
+
+```{r}
+vpredict(tut8.asr, h2 ~ V3 / (V1+V2+V3+V4))
+```
+
+```{r}
+qgm_summary(tut4.asr)
+```
+
+Additive genetic variance = 12.867742 with se 1.3397653
+Residual variance = 5.182249 with se 0.8874169
+
+```{r}
+p_value_treatment_2 <- 2 * (1 - pnorm(abs(0.3758349)))
+p_value_treatment_3 <- 2 * (1 - pnorm(abs(1.8640447)))
+
+p_value_treatment_2
+p_value_treatment_3
+```
+
+
+```{r}
+print(as.data.frame(wald(tut4.asr,denDF="numeric",ssType="conditional")$Wald)[,c(1,2,4,6)])
+```
+At least 1 treatment differs from the others.
+
+```{r}
+vpredict(tut4.asr, phenotypic_variance ~ V1 + V2)
+```
+
+```{r}
+vpredict(tut4.asr, h2 ~ V1 / (V1 + V2))
+```
+
+```{r}
+sqrt(0.7128946)
+sqrt(0.7539588)
+```
+
+```{r}
+head(qgm_random_effects(tut4.asr, "tid"))
+ebv <- qgm_random_effects(tut4.asr,"tid")
+head(ebv)
+```
+```{r}
+nrow(ebv)
+colnames(ebv)[1] <- "ebv"
+colnames(ebv)[2] <- "se"
+colnames(ebv)[4] <- "tid"
+head(ebv)
+```
+```{r}
+pedx <- merge(tut4, ebv, by = "tid", sort = FALSE)
+head(pedx)
+tail(pedx)
+nrow(pedx)
+```
+
+```{r}
+par(mfrow = c(1, 2))
+plot(pedx$generation, pedx$ebv, col="blue", cex=0.1, xlab="Generation", ylab="Estimated Breeding Value")
+points(pedx$generation, pedx$ebv, col="red", cex=0.1)
+plot(pedx$treatment, pedx$ebv, col="purple", cex=0.1, xlab="Treatment", ylab="Estimated Breeding Value")
+points(pedx$treatment, pedx$ebv, col="pink", cex=0.1)
+par(mfrow = c(1, 1))
+```
+No selection?
+
+```{r}
+pedx$f <- attr(ainv,"inbreeding")
+bva <- 12.867742
+pedx$b_acc <- sqrt(1. - pedx$se**2./(bva*(1+pedx$f)))
+head(pedx$b_acc)
+head(pedx)
+tail(pedx)
+#Additive genetic variance component
+```
+
+```{r}
+mean(pedx[pedx$gen %in% c(0),"b_acc"])
+mean(pedx[pedx$gen %in% c(1),"b_acc"])
+mean(pedx[pedx$gen %in% c(2),"b_acc"])
+```
+```{r}
+mean(pedx$b_acc)
+```
+
+
+```{r}
+pedx[pedx$tid %in% c(1,49,1001,1057,2001,2701), "b_acc"]
+```
+```{r}
+plot(pedx$b_acc, pedx$gen, ylim = c(0,4), xlim = c(0.4,1.05))
+```
+
+```{r}
+plot(pedx$b_acc, pedx$gen, ylim = c(0, 4), xlim = c(0.4, 1.05), 
+     xlab="Breeding Accuracy", ylab="Generation", 
+     main="Breeding Accuracy vs Generation", 
+     pch=19, col="blue")
+
+# Adding grid lines
+grid()
+```
+Accuracy gets worse across the generations. 
+
+```{r}
+unique(pedx$b_acc)
+pedx$b_acc
+```
+
+```{r}
+par(mfrow = c(1, 2))
+
+# First plot: Treatment vs. Accuracy
+plot(pedx$treatment, pedx$b_acc, col = "darkblue", pch = 16, cex = 0.5, xlab = "Treatment", ylab = "Accuracy", main = "Accuracy vs Treatment")
+points(pedx$treatment, pedx$b_acc, col = "darkblue", pch = 16, cex = 0.5)
+
+# Second plot: Generation vs. Accuracy
+plot(pedx$generation, pedx$b_acc, col = "darkblue", pch = 16, cex = 0.5, xlab = "Generation", ylab = "Accuracy", main = "Accuracy vs Generation")
+points(pedx$generation, pedx$b_acc, col = "darkblue", pch = 16, cex = 0.5)
+
+# Reset the plotting area to default (optional)
+par(mfrow = c(1, 1))
+```
+
+
+```{r}
+par(mfrow = c(1, 2))
+hist(pedx[pedx$generation %in% c(0),]$ebv, breaks = 20, main = "EBV Histogram", xlab = "EBV")
+hist(pedx[pedx$generation %in% c(0),]$se, breaks = 20, main = "SE Histogram", xlab = "SE")
+par(mfrow = c(1, 1))
+```
+```{r}
+par(mfrow = c(1, 2))
+hist(pedx[pedx$generation %in% c(1),]$ebv, breaks = 20, main = "EBV Histogram", xlab = "EBV")
+hist(pedx[pedx$generation %in% c(1),]$se, breaks = 20, main = "SE Histogram", xlab = "SE")
+par(mfrow = c(1, 1))
+```
+```{r}
+par(mfrow = c(1, 2))
+hist(pedx[pedx$generation %in% c(2),]$ebv, breaks = 20, main = "EBV Histogram", xlab = "EBV")
+hist(pedx[pedx$generation %in% c(2),]$se, breaks = 20, main = "SE Histogram", xlab = "SE")
+par(mfrow = c(1, 1))
+```
+Bigger spread as predictions get better. 
+
+```{r}
+pedx[pedx$tid %in% c(1,49,1001,1057,2001,2701),]
+```
+```{r}
+pedx[pedx$tid %in% c(2001,2002,2003),]
+```
+Same info, have the same parents
+
+
+```{r}
+pedx[pedx$tid %in% c(1754,1089),]
+```
+Average of the parents breeding values
+
+```{r}
+print(as.data.frame(summary(tut4.asr,coef=TRUE)$coef.fixed))
+```
+(Intercept)	29.6790296	0.2685880	110.5002242	
+treatment_1	0.0000000	NA	NA	
+treatment_2	0.1052886	0.2801460	0.3758349	
+treatment_3	0.5192144	0.2785418	1.8640447		
+
+
+```{r}
+tut5.asr <- asreml(fixed=dbh21~1+treatment,
+                   residual=~idv(units),
+                   data=tut4)
+qgm_summary(tut5.asr)
+```
+#2x(logL1-logL0)
+```{r}
+2 * (-3707.27086944953 - -3861.36553448811)
+qchisq(0.95,1) #type 1 error = 0.05
+```
+308.1893 >> 2.705543
+
+```{r}
+qchisq(0.998,1)
+```
+
+```{r}
+tut7.asr <- asreml(fixed=log(dbh21)~1+treatment,
+                   random=~vm(tid,ainv),
+                   residual=~idv(units),
+                   data=tut4,
+                   as.is = TRUE)
+qgm_summary(tut7.asr)
+```
+```{r}
+plot(tut7.asr)
+```
+
+```{r}
+vpredict(tut7.asr, h2 ~ V1 / (V1+V2))
+```
+
+```{r}
+# Extract the estimated breeding values (assuming they are stored in a column named 'ebv')
+ebvs <- pedx$ebv
+
+# Calculate the correlation
+correlation <- cor(ebvs, residuals, use = "complete.obs")
+
+# Print the correlation
+print(correlation)
+```
+```{r}
+residuals2 <- residuals(tut7.asr)
+cor(ebvs, residuals2, use = "complete.obs")
+```
+```{r}
+shapiro.test(residuals)
+```
+```{r}
+head(pedx)
+pedx[0:10,]
+min(pedx$ebv)
+tail(pedx)
+```
+
+```{r}
+mean(pedx$ebv)
+```
+
+
