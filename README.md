@@ -23,5 +23,5 @@ Accuracy: Highest in generation 1, lowest in generation 2 due to missing phenoty
 ## Sitka spruce diameter measurements by generation and by treatment
 ![image](https://github.com/user-attachments/assets/8139885d-3890-4131-bc76-213b829327af)
 
-## Summary of accuracies across treatments and generations. 
+## Summary of accuracies of EBV estimation across treatments and generations. 
 ![image](https://github.com/user-attachments/assets/75d5302e-5502-4c0f-9838-8a25d7236308)
